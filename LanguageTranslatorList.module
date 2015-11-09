@@ -1,0 +1,340 @@
+<?php
+
+/**
+ * ProcessWire Language Translator Process Including Twig Support
+ *
+ * This module extends the process assigned to the processwire/setup/language-translator/ page.
+ *
+ * ProcessWire 2.x
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ *
+ * @author Tabea David <td@kf-interactive.com>
+ * @version 0.0.6
+ * @copyright Copyright (c) 2015 KF Interactive, www.kf-interactive.com, <info@kf-interactive.com>
+ * @see https://github.com/justonestep/processwire-languagetranslatorlist
+ * @see http://www.processwire.com
+ * @see http://modules.processwire.com/modules/process-language-translator/ (by Christoph Thelen)
+ */
+
+/**
+ * Class LanguageTranslatorList
+ */
+class LanguageTranslatorList extends ProcessLanguageTranslator implements Module  {
+
+  /**
+   * Retrieves module meta data
+   * Implementation of the Module interface
+   *
+   * @return array
+   * @see http://processwire.com/apigen/class-Module.html
+   */
+  public static function getModuleInfo() {
+    return array(
+      'title' => 'Language Translator Twig Support',
+      'version' => 006,
+      'summary' => 'Provides language translation capabilities for ProcessWire core and modules including Twig support.',
+      'author' => 'Tabea David',
+      'requires' => 'ProcessLanguageTranslator',
+      'href' => 'https://github.com/justonestep/processwire-languagetranslatorlist',
+      'permission' => 'lang-edit',
+      'singular' => true,
+      'autoload' => true,
+      'icon' => 'globe'
+    );
+  }
+
+  /**
+   * @field array Default config values
+   */
+  protected static $defaults = array(
+    'translatable' => 0
+  );
+
+  /**
+   * Initialize the module and set current Language Id
+   *
+   */
+  public function init() {
+    $this->setLanguage($this->getCurrentLanguageId());
+    $this->addHookBefore('ProcessLanguageTranslator::executeAdd', $this, 'processExecuteAdd');
+    $this->addHookBefore('ProcessLanguageTranslator::executeList', $this, 'processExecuteList');
+  }
+
+ /**
+   * Add a new class file to translate (creating a new textdomain file)
+   * modified function of ___executeAdd() in ProcessLanguageTranslator
+   *
+   * @param HookEvent $event
+   * @return string
+   */
+  public function processExecuteAdd(HookEvent $event) {
+    parent::init();
+    $files = $this->processSelect();
+    $this->addBreadcrumbs();
+
+    $form = $this->modules->get('InputfieldForm');
+    $form->attr('method', 'post');
+    $form->attr('action', "./?language_id={$this->language->id}");
+    $form->description = 'Language: ' . ucfirst($this->language->title);
+
+    $field = $this->modules->get('InputfieldSelect');
+    $countUnranslatedFiles = count($files, COUNT_RECURSIVE) - count($files, 0);
+    $field->label = sprintf(
+      _n(
+        '%d file have not been translated to %s yet.',
+        '%d files have not been translated to language `%s` yet.',
+        $countUnranslatedFiles,
+        $this->language->title
+      ),
+      $countUnranslatedFiles,
+      $this->language->title
+    );
+
+    $field->description = __("Select untranslated file from the list below.");
+    $field->attr('name', 'filename');
+    $field->addOptions($files);
+    $form->add($field);
+
+    $submit = $this->modules->get("InputfieldSubmit");
+    $submit->attr('name', 'submit_add');
+    $submit->attr('value', __('Translate File'));
+    $form->add($submit);
+
+    if ($this->input->post->submit_add) {
+      $this->processAdd($field);
+    }
+
+    $out = '<div style="text-align: right;">' . $this->switchLang($this->page->url . 'add/', '4') . '</div>';
+    $out .= $form->render() . '<br />';
+    $out .= $this->switchLang($this->page->url . 'add/');
+
+    $event->replace = true;
+    $event->return = $out;
+  }
+
+ /**
+  * List the languages 
+  *
+  * @param HookEvent $event
+  * @return string
+  */
+  public function processExecuteList(HookEvent $event) {
+    $url = $this->pages->get("template=admin, name=language-translations")->url;
+    $this->message('url ' . $url);
+    $out = '<div style="text-align: right;">' . $this->switchLang('', '4') . '</div>';
+
+    $languageFiles = array('language_files_site' => __('Language Files - Site'));
+    if ($this->user->isSuperuser()) $languageFiles['language_files'] = __('Language Files - Core');
+
+    foreach ($languageFiles as $fieldName => $fileName) {
+      if (!$this->language->$fieldName) continue; // language_files_site not installed
+
+      $table = $this->modules->get("MarkupAdminDataTable");
+      $headline = "<h2>{$fileName}</h2>";
+
+      if (count($this->language->$fieldName)) {
+        $table->headerRow(array(
+          __('name'),
+          __('file'),
+          __('phrases'),
+          __('last modified')
+        ));
+
+        foreach ($this->language->$fieldName as $file) {
+          $textdomain = basename($file->basename, '.json');
+          $data = $this->translator->getTextdomain($textdomain);
+
+          if (!$this->user->isSuperuser() && !preg_match('/(\.)(php|twig)/', $data['file'])) {
+            $this->translator->unloadTextdomain($textdomain);
+            continue;
+          }
+
+          $table->row(array(
+            $this->getFilename($data['file']) => $url . "edit/?textdomain=$textdomain",
+            $data['file'],
+            count($data['translations']),
+            date($this->config->dateFormat, filemtime($file->filename))
+          ));
+
+          $this->translator->unloadTextdomain($textdomain);
+        }
+      } else {
+        $table->headerRow(array('file'));
+        $table->row(array("No files in this language for field $fieldName."));
+      }
+
+      $out .= $headline . $table->render();
+    }
+
+    if ($this->user->isSuperuser()) {
+      $btn = $this->modules->get('InputfieldButton');
+      $btn->attr('value', __('Translate another File'));
+      $btn->href = $url . 'add/';
+      $btn->addClass('head_button_clone');
+      $out .= $btn->render() . '<br />';
+    }
+
+    $out .= '<br />' . $this->switchLang();
+
+    $event->replace = true;
+    $event->return = $out;
+  }
+
+  /**
+   * Find translatable files
+   *
+   * @param string $dir
+   * @param int $languageId
+   */
+  protected function findTransFiles($dir, $languageId) {
+    global $result;
+
+    // check if it is an directory
+    if (is_dir($dir) === false) return false;
+
+    // try to open directory
+    $handle = opendir($dir);
+    if (false === $handle) return false;
+
+    while (($file = readdir($handle)) !== false) {
+      // except of . and .. files
+      if (in_array($file, array('.', '..'))) continue;
+
+      // if it is a directory recall function
+      if (is_dir($dir . $file)) {
+        $this->findTransFiles($dir . $file . '/', $languageId);
+        continue;
+      }
+
+      // select only .php .module, .inc AND .twig files
+      $ext = pathinfo($file, PATHINFO_EXTENSION);
+      if (!in_array($ext, array('php', 'module', 'inc', 'twig'))) continue;
+
+      // put it to the result array
+      // if the file contains translatable phrases
+      if ($this->parseTranslatableFile($dir . $file)) {
+        $rootpath = $this->config->paths->root;
+        $filePath = substr($dir, strlen($rootpath));
+        $jsonFilename = $this->translator->filenameToTextdomain($filePath . $file) . '.json';
+        $jsonFilePath = $this->config->paths->assets . 'files/' . $languageId . '/';
+
+        // check whether already a translation file exists
+        if (!file_exists($jsonFilePath . $jsonFilename)) {
+          $result[$filePath][$filePath . $file] = $file;
+        }
+      }
+    }
+
+    closedir($handle);
+
+    return $result;
+  }
+
+  /**
+   * Collect all directories
+   * that need to be checked for translateable files
+   *
+   */
+  protected function processSelect() {
+    $result = array();
+
+    // get directories in which translatable files might occur
+    $dirs = array(
+      $this->config->paths->templates,
+      $this->config->paths->siteModules,
+      $this->config->paths->wire
+    );
+
+    foreach ($dirs as $dir) {
+      $result = $this->findTransFiles($dir, $this->language->id);
+    }
+
+    return $result;
+  }
+
+  /**
+   * switch to other languages if exists
+   *
+   */
+  protected function switchLang($hrefPrefix = '', $headline = '3') {
+    $otherLanguages = '';
+    foreach ($this->languages as $key => $lang) {
+      $otherLanguages .= ($key > 0) ? '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;' : '';
+
+      if ($lang->id === $this->session->translateLanguageID) {
+        $otherLanguages .= "<strong>" . ucfirst($lang->title) . "</strong></a>";
+      } else {
+        $otherLanguages .= "<a href='{$hrefPrefix}?language_id={$lang->id}'>" . ucfirst($lang->title) . "</a>";
+      }
+    }
+
+    if (!empty($otherLanguages)) {
+      $otherLanguages = "<h{$headline}>" . __("Choose another language to translate:") . "</h{$headline}><div>{$otherLanguages}</div>";
+    }
+
+    return $otherLanguages;
+  }
+
+  /**
+   * Get current language
+   *
+   */
+  private function getCurrentLanguageId() {
+    $languageIds = array();
+    foreach ($this->languages as $language) {
+      $languageIds[] = ($language->id);
+    }
+
+    if ($this->input->get->language_id) {
+      // if language specified as a GET var in the URL
+      // the module will pick it up and use it (will be stored in session)
+      $currentLanguage = (int)$this->input->get->language_id;
+    } elseif ($this->session->translateLanguageID && in_array($this->session->translateLanguageID, $languageIds, TRUE)) {
+      // if there exists a valid session var (translateLanguageID) this will be used
+      $currentLanguage = $this->session->translateLanguageID;
+    } else {
+      // use default-setting the language of logged-in user
+      $currentLanguage = $this->user->language->id;
+    }
+
+    return $currentLanguage;
+  }
+
+  /**
+   * get filename
+   *
+   */
+  private function getFilename($word) {
+    $array = explode('/', $word);
+    $filename = end($array);
+    $name = preg_replace('/\..*$/', '', $filename);
+
+    $spaceBeforeCamel = ltrim(preg_replace('/[A-Z]/', ' $0', $name), '_');
+    $spaceInsteadOfUnderscore = preg_replace('/_/', ' ', $spaceBeforeCamel);
+
+    return ucwords($spaceInsteadOfUnderscore);
+  }
+
+  /**
+   *
+   * install routine
+   */
+  public function ___install() {
+    $p = $this->pages->get("template=admin, name=language-translator");
+    $p->status = 21; // change status to visible in admin > setup
+    $p->process = "ProcessLanguageTranslator";
+    $p->save();
+  }
+
+  /**
+   *
+   * uninstall routine
+   * default settings
+   */
+  public function ___uninstall() {
+    $p = $this->pages->get("template=admin, name=language-translator");
+    $p->status = 1040; // change status to hidden in admin > setup
+    $p->process = "ProcessLanguageTranslator";
+    $p->save();
+  }
+}
