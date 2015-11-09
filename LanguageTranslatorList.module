@@ -28,27 +28,24 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
    * @return array
    * @see http://processwire.com/apigen/class-Module.html
    */
-  public static function getModuleInfo() {
+  static public function getModuleInfo() {
     return array(
       'title' => 'Language Translator Twig Support',
       'version' => 006,
       'summary' => 'Provides language translation capabilities for ProcessWire core and modules including Twig support.',
       'author' => 'Tabea David',
       'requires' => 'ProcessLanguageTranslator',
+      'icon' => 'globe',
       'href' => 'https://github.com/justonestep/processwire-languagetranslatorlist',
+      'useNavJSON' => true,
       'permission' => 'lang-edit',
+      'permissions' => array(
+        'lang-edit' => 'Administer languages and static translation files'
+      ),
       'singular' => true,
       'autoload' => true,
-      'icon' => 'globe'
     );
   }
-
-  /**
-   * @field array Default config values
-   */
-  protected static $defaults = array(
-    'translatable' => 0
-  );
 
   /**
    * Initialize the module and set current Language Id
@@ -75,12 +72,12 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
     $form = $this->modules->get('InputfieldForm');
     $form->attr('method', 'post');
     $form->attr('action', "./?language_id={$this->language->id}");
-    $form->description = 'Language: ' . ucfirst($this->language->title);
+    $form->description = sprintf($this->_('Select a file and click `Translate File` to create a new %s translation file.'), $this->language->title);
 
     $field = $this->modules->get('InputfieldSelect');
     $countUnranslatedFiles = count($files, COUNT_RECURSIVE) - count($files, 0);
     $field->label = sprintf(
-      _n(
+      $this->_(
         '%d file have not been translated to %s yet.',
         '%d files have not been translated to language `%s` yet.',
         $countUnranslatedFiles,
@@ -90,19 +87,17 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
       $this->language->title
     );
 
-    $field->description = __("Select untranslated file from the list below.");
+    $field->description = $this->_("Select untranslated file from the list below.");
     $field->attr('name', 'filename');
     $field->addOptions($files);
     $form->add($field);
 
     $submit = $this->modules->get("InputfieldSubmit");
     $submit->attr('name', 'submit_add');
-    $submit->attr('value', __('Translate File'));
+    $submit->attr('value', $this->_('Translate File'));
     $form->add($submit);
 
-    if ($this->input->post->submit_add) {
-      $this->processAdd($field);
-    }
+    if ($this->input->post->submit_add) $this->processAdd($field);
 
     $out = '<div style="text-align: right;">' . $this->switchLang($this->page->url . 'add/', '4') . '</div>';
     $out .= $form->render() . '<br />';
@@ -189,16 +184,14 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
   protected function findTransFiles($dir, $languageId) {
     global $result;
 
-    // check if it is an directory
-    if (is_dir($dir) === false) return false;
+    if (is_dir($dir) === false) return false; // check if it is an directory
 
     // try to open directory
     $handle = opendir($dir);
     if (false === $handle) return false;
 
     while (($file = readdir($handle)) !== false) {
-      // except of . and .. files
-      if (in_array($file, array('.', '..'))) continue;
+      if (in_array($file, array('.', '..'))) continue; // except of . and .. files
 
       // if it is a directory recall function
       if (is_dir($dir . $file)) {
@@ -245,9 +238,7 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
       $this->config->paths->wire
     );
 
-    foreach ($dirs as $dir) {
-      $result = $this->findTransFiles($dir, $this->language->id);
-    }
+    foreach ($dirs as $dir) $result = $this->findTransFiles($dir, $this->language->id);
 
     return $result;
   }
@@ -281,9 +272,7 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
    */
   private function getCurrentLanguageId() {
     $languageIds = array();
-    foreach ($this->languages as $language) {
-      $languageIds[] = ($language->id);
-    }
+    foreach ($this->languages as $language) $languageIds[] = ($language->id);
 
     if ($this->input->get->language_id) {
       // if language specified as a GET var in the URL
@@ -305,7 +294,7 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
    *
    */
   private function getFilename($word) {
-    $array = explode('/', $word);
+    $array = explode('/', str_replace('\\', '/', $word));
     $filename = end($array);
     $name = preg_replace('/\..*$/', '', $filename);
 
@@ -316,13 +305,12 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
   }
 
   /**
-   *
    * install routine
+   *
    */
   public function ___install() {
     $p = $this->pages->get("template=admin, name=language-translator");
     $p->status = 21; // change status to visible in admin > setup
-    $p->process = "ProcessLanguageTranslator";
     $p->save();
   }
 
@@ -334,7 +322,6 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
   public function ___uninstall() {
     $p = $this->pages->get("template=admin, name=language-translator");
     $p->status = 1040; // change status to hidden in admin > setup
-    $p->process = "ProcessLanguageTranslator";
     $p->save();
   }
 }

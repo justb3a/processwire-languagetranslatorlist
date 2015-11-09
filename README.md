@@ -7,7 +7,7 @@ Extends Language Translator Modul.
 Changes view and adds twig support.  
 If you don't use [Twig](http://modules.processwire.com/modules/template-twig-replace) as template engine, you can use this module equally.
 
-Designed for use with ProcessWire > 2.6.22
+Designed for use with ProcessWire > 2.6.23
 [http://processwire.com](http://processwire.com)
 
 ## Installation
