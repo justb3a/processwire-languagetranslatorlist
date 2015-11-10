@@ -36,7 +36,7 @@ Choose a file, click _Translate File_ and translate all phrases you want to.
 
 Below that list is a language switcher, where you can easily switch your language.
 
-![Setup Languages](https://github.com/justonestep/processwire-processlanguagetranslatortwigsupport/blob/master/screens/languages.png)
+![Setup Languages](https://github.com/justonestep/processwire-languagetranslatorlist/blob/master/screens/languages.png)
 
 **admin/setup/language-translator**
 
@@ -46,7 +46,7 @@ All translated files for the choosen language are listed.
 You can edit the belonging phrases by clicking on the file.  
 Furthermore you can add another file to translate by clicking the _Translate another File_ Button.
 
-![Setup Language-Translator](https://github.com/justonestep/processwire-processlanguagetranslatortwigsupport/blob/master/screens/language-translator.png)
+![Setup Language-Translator](https://github.com/justonestep/processwire-languagetranslatorlist/blob/master/screens/language-translator.png)
 
 ## Enable Language Translators for Editors
 
@@ -55,3 +55,4 @@ This module provides a permission called **lang-edit** (you see this permission 
 If a specific role should be able to use the Language Translator just go to ``Admin > Access > Roles``, edit the specific role and check **lang-edit**.
 
 The modules will display **only the site translation files**, the core files will be hidden.
+I
