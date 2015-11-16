@@ -51,10 +51,12 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
    * Initialize the module and set current Language Id
    *
    */
-  public function init() {
-    $this->setLanguage($this->getCurrentLanguageId());
-    $this->addHookBefore('ProcessLanguageTranslator::executeAdd', $this, 'processExecuteAdd');
-    $this->addHookBefore('ProcessLanguageTranslator::executeList', $this, 'processExecuteList');
+  public function ready() {
+    if ($this->page->template->name === 'admin') {
+      $this->setLanguage($this->getCurrentLanguageId());
+      $this->addHookBefore('ProcessLanguageTranslator::executeAdd', $this, 'processExecuteAdd');
+      $this->addHookBefore('ProcessLanguageTranslator::executeList', $this, 'processExecuteList');
+    }
   }
 
  /**
@@ -108,7 +110,7 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
   }
 
  /**
-  * List the languages 
+  * List the languages
   *
   * @param HookEvent $event
   * @return string
