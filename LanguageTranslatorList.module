@@ -52,7 +52,8 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
    *
    */
   public function ready() {
-    if ($this->page->template->name === 'admin') {
+    $p = $this->pages->get('template=admin, name=language-translator');
+    if ($this->page->id === $p->id) {
       $this->setLanguage($this->getCurrentLanguageId());
       $this->addHookBefore('ProcessLanguageTranslator::executeAdd', $this, 'processExecuteAdd');
       $this->addHookBefore('ProcessLanguageTranslator::executeList', $this, 'processExecuteList');
