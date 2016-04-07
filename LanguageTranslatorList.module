@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ProcessWire Language Translator Process Including Twig Support
+ * ProcessWire Language Translator Process Including Twig and Smarty Support
  *
  * This module extends the process assigned to the processwire/setup/language-translator/ page.
  *
@@ -9,8 +9,8 @@
  * Licensed under GNU/GPL v2, see LICENSE.TXT
  *
  * @author Tabea David <td@kf-interactive.com>
- * @version 0.0.6
- * @copyright Copyright (c) 2015 KF Interactive, www.kf-interactive.com, <info@kf-interactive.com>
+ * @version 1.0.0
+ * @copyright Copyright (c) 2016 KF Interactive, www.kf-interactive.com, <info@kf-interactive.com>
  * @see https://github.com/justonestep/processwire-languagetranslatorlist
  * @see http://www.processwire.com
  * @see http://modules.processwire.com/modules/process-language-translator/ (by Christoph Thelen)
@@ -30,9 +30,9 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
    */
   static public function getModuleInfo() {
     return array(
-      'title' => 'Language Translator Twig Support',
-      'version' => 006,
-      'summary' => 'Provides language translation capabilities for ProcessWire core and modules including Twig support.',
+      'title' => 'Language Translator Twig and Smarty Support',
+      'version' => 100,
+      'summary' => 'Provides language translation capabilities for ProcessWire core and modules including Twig and Smarty support.',
       'author' => 'Tabea David',
       'requires' => 'ProcessLanguageTranslator',
       'icon' => 'globe',
@@ -142,7 +142,7 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
           $textdomain = basename($file->basename, '.json');
           $data = $this->translator->getTextdomain($textdomain);
 
-          if (!$this->user->isSuperuser() && !preg_match('/(\.)(php|twig)/', $data['file'])) {
+          if (!$this->user->isSuperuser() && !preg_match('/(\.)(php|twig|tpl|html)/', $data['file'])) {
             $this->translator->unloadTextdomain($textdomain);
             continue;
           }
@@ -202,9 +202,9 @@ class LanguageTranslatorList extends ProcessLanguageTranslator implements Module
         continue;
       }
 
-      // select only .php .module, .inc AND .twig files
+      // select only .php .module, .inc, .twig, .tpl AND .html files
       $ext = pathinfo($file, PATHINFO_EXTENSION);
-      if (!in_array($ext, array('php', 'module', 'inc', 'twig'))) continue;
+      if (!in_array($ext, array('php', 'module', 'inc', 'twig', 'tpl', 'html'))) continue;
 
       // put it to the result array
       // if the file contains translatable phrases

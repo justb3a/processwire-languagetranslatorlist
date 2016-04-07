@@ -4,8 +4,8 @@
 
 
 Extends Language Translator Modul.  
-Changes view and adds twig support.  
-If you don't use [Twig](http://modules.processwire.com/modules/template-twig-replace) as template engine, you can use this module equally.
+Changes view and adds support for other template engines like twig and smarty.  
+If you don't use another template engine, you can use this module equally.
 
 Designed for use with ProcessWire > 2.6.23
 [http://processwire.com](http://processwire.com)
@@ -30,7 +30,7 @@ In ProcessWire admin go to _admin/setup/languages_.
 Choose a language and click on the button _Translate File_.  
 Now you see a dropdown list of all files you don't have translated for the choosen language yet.  
 
-**Notice**: If you use twig as your template engine, you get your twig files listed!
+**Notice**: If you use another template engine, you'll get your `.twig`, `.tpl` or `.html` files listed there as well!
 
 Choose a file, click _Translate File_ and translate all phrases you want to.
 
@@ -55,4 +55,3 @@ This module provides a permission called **lang-edit** (you see this permission 
 If a specific role should be able to use the Language Translator just go to ``Admin > Access > Roles``, edit the specific role and check **lang-edit**.
 
 The modules will display **only the site translation files**, the core files will be hidden.
-I
