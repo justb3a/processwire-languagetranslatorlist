@@ -7,7 +7,7 @@ Extends Language Translator Modul.
 Changes view and adds support for other template engines like twig and smarty.  
 If you don't use another template engine, you can use this module equally.
 
-Designed for use with ProcessWire > 2.6.23
+Designed for use with ProcessWire 3.x
 [http://processwire.com](http://processwire.com)
 
 ## Installation
